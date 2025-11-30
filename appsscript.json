@@ -1,15 +1,14 @@
 {
   "timeZone": "America/Denver",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
   "dependencies": {
     "libraries": [
       {
         "userSymbol": "bckLib",
-        "version": "0",
         "libraryId": "1DmTZPP43uN8I_De5pmQUYF6Ys46p26ErlOQHf4EQpWxSiv642I7jknrn",
-        "developmentMode": true
+        "version": "8"
       }
     ]
-  },
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8"
+  }
 }

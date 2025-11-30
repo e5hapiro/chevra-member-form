@@ -191,24 +191,29 @@ function sendFormConfirmationNotification(eventData, preApproved = false) {
     function _preApprovedResponse(eventData) {
 
       const emailData = {
-        subject : `${eventData.firstName} ${eventData.lastName} - Thank you for volunteering with Boulder's Chevra Chadisha`,
+        subject : `${eventData.firstName} ${eventData.lastName} - Approved - BCK Shmira Volunteer`,
         body: `
 
-        Dear ${eventData.firstName},
+Dear ${eventData.firstName},
 
-        Your Volunteer Membership to the Boulder Chevra Kadisha has been approved. 
+Your application to become a Volunteer Member of the Boulder Chevra Kadisha has been approved. 
 
-        Shmira Schedule 
-        When there is a death in the community, you will receive an email request to sit shmira. The email will include a link to a web portal where you may sign up for shmira. Please remember that this link is unique to you so please do not share it. 
+Shmira Schedule 
 
-        If you have any questions, do not hesitate to contact us by email or phone.
+When there is a death in the community, you will receive an email request to sit shmira. The email will include a link to a web portal where you may sign up for shmira. Please remember that this link is unique to you so please do not share it. 
 
-        With gratitude,
+Tahara Requests
 
-        Boulder Chevra Kadisha
-        Phone - 303-842-5365
-        Email - boulder.chevra@gmail.com
-        
+Tahara requests will only go to volunteers who have indicated they will do tahara. The Tahara Lead will contact volunteers by email and/or text when needed. 
+
+If you have any questions, do not hesitate to contact us by email or phone.
+
+With gratitude,
+
+Boulder Chevra Kadisha
+Phone - 303-842-5365
+Email - boulder.chevra@gmail.com
+
       `
       }
 
@@ -223,22 +228,28 @@ function sendFormConfirmationNotification(eventData, preApproved = false) {
     function _followupResponse(eventData) {
 
       const emailData = {
-        subject : `${eventData.firstName} ${eventData.lastName} - Thank you for volunteering with Boulder's Chevra Chadisha - Let's talk`,
+        subject : `${eventData.firstName} ${eventData.lastName} - Guest Shomrim application to BCK - Let's talk`,
         body: `
 
-        Dear ${eventData.firstName},
+Dear ${eventData.firstName},
 
-        Your Volunteer Membership to the Boulder Chevra Kadisha has not yet been approved. 
+Thank you for submitting your Guest Shomerim application with the Boulder Chevra Kadisha. 
 
-        Please contact us at: 
-          Boulder Chevra Kadisha
-          Phone - 303-842-5365
-          Email - boulder.chevra@gmail.com
+Your Guest Shomrim application to the Boulder Chevra Kadisha has not yet been approved. 
 
-        With gratitude,
+We need to discuss the available options with you. 
 
-        Boulder Chevra Kadisha
-        
+Please contact us at: 
+Boulder Chevra Kadisha
+Phone - 303-842-5365
+Email - boulder.chevra@gmail.com
+
+We appreciate your willingness to perform this sacred duty and look forward to speaking with you. 
+
+With gratitude,
+
+Boulder Chevra Kadisha
+
       `
       }
 
