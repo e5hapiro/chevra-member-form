@@ -18,12 +18,11 @@
 
 /** * @constant {boolean} DEBUG - Toggle for detailed logging in the Apps Script console.
  */
-const DEBUG = false;
+const DEBUG = true;
 
 /** * @constant {number} TOKEN_COLUMN_NUMBER - The specific column index where unique tokens are stored.
  */
 const TOKEN_COLUMN_NUMBER = 24;
-
 /**
  * Development utility to simulate a Form Submit event.
  * Used for testing the `processFormSubmit` logic without needing a live form entry.
@@ -32,34 +31,57 @@ function debugSubmission() {
   const eObject = {
     "authMode": "FULL",
     "namedValues": {
-      "Please indicate your comfort level or interest in the following sacred tasks: [Women’s Taharah (Ritual washing/dressing)]": ["No"],
-      "Name of synagogue (Please include city and state if not local)\n": ["Bonai Shalom"],
-      "Timestamp": ["3/10/2026 17:04:05"],
-      "First Name": ["Edmond"],
-      "Are you over 18 years old?": ["Yes"],
-      "Google Groups Enrollment\nWe use a Google Group to share training materials, educational resources, and community event information. May we add your primary email to this group?\n": ["Yes, please add me."],
-      "Email Address": ["eshapiro@outlook.com"],
+      "Please indicate your comfort level or interest in the following sacred tasks: [Women’s Taharah (Ritual washing/dressing)]": ["Yes"],
+      "Timestamp": ["3/24/2026 20:22:43"],
       "State": ["CO"],
-      "Address\nWe occasionally send physical mailings, such as educational materials or thank-you notes.": ["6931"],
-      "Zip": ["80303"],
-      "Last Name": ["Shapiro"],
-      "Cell Phone \nPlease enter your 10-digit mobile number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": ["3036185661"],
-      "Is there anything you want us to know about you, your skills or past chevra kadisha experience?": ["Ignore above"],
+      "Primary Email Address:": ["eshapiro@gmail.com"],
+      "First Name": ["Plum"],
+      "Name of synagogue (Please include city and state if not local)\n": ["CBS"],
+      "Primary Mobile Phone Number: \nPlease enter your 10-digit mobile number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": ["3036185661"],
+      "Is there anything you want us to know about you, your skills or past chevra kadisha experience?": ["Not applicable"],
       "City": ["Boulder"],
-      "What is your community affiliation?\nThe Boulder Chevra Kadisha is a community-wide, independent organization. We serve all Jews in Boulder County—regardless of synagogue membership.": ["Member of local synagogue"],
-      "Please indicate your comfort level or interest in the following sacred tasks: [Shmira (Sitting with the deceased)]": ["Yes"],
-      "Please indicate your comfort level or interest in the following sacred tasks: [Men’s Taharah (Ritual washing/dressing)]": ["Yes"],
+      "Please indicate your comfort level or interest in the following sacred tasks: [Men’s Taharah (Ritual washing/dressing)]": ["No"],
+      "Secondary Phone Number: \nPlease enter your 10-digit number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": [""],
+      "Last Name": ["Shapiro123"],
+      "Address\nWe occasionally send physical mailings, such as educational materials or thank-you notes.": ["6391 Swallow Ln"],
+      "Zip": ["80303"],
       "By submitting this application, I certify the information is true and accurate and I agree with the terms and conditions of volunteering with the Boulder Chevra Kadisha. ": ["Agree"],
-      "Primary Email": ["Same as above"],
-      "Primary Mobile Phone Number (if different than above):  Please enter your 10-digit mobile number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": [""],
-      "Primary Email Address (if different than above): ": [""],
+      "Please indicate your comfort level or interest in the following sacred tasks: [Shmira (Sitting with the deceased)]": ["Yes"],
+      "Google Groups Enrollment\nWe use a Google Group to share training materials, educational resources, and community event information. May we add your primary email to this group?\n": ["Yes, please add me."],
       "How would you like to receive shmira and/or tahara scheduling alerts? (Select all that apply)": ["Email, Text Message"],
-      "Secondary Phone\n(use for voice only - no texting) Please enter your 10-digit number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": [""]
+      "What is your community affiliation?\nThe Boulder Chevra Kadisha is a community-wide, independent organization. We serve all Jews in Boulder County—regardless of synagogue membership.": ["Member of local synagogue"],
+      "Are you over 18 years old?": ["Yes"]
     },
-    "range": { "columnEnd": 23, "columnStart": 1, "rowEnd": 6, "rowStart": 6 },
+    "range": {
+      "columnEnd": 20,
+      "columnStart": 1,
+      "rowEnd": 14,
+      "rowStart": 14
+    },
     "source": {},
     "triggerUid": "8462282913365360640",
-    "values": ["3/10/2026 17:04:05", "eshapiro@outlook.com", "Yes", "Edmond", "Shapiro", "Same as above", "3036185661", "", "6931", "Boulder", "CO", "80303", "Yes", "Yes", "No", "Ignore above", "Member of local synagogue", "", "", "Email, Text Message", "Yes, please add me.", "Bonai Shalom", "Agree"]
+    "values": [
+      "3/24/2026 20:22:43",
+      "Yes",
+      "Plum",
+      "Shapiro123",
+      "6391 Swallow Ln",
+      "Boulder",
+      "CO",
+      "80303",
+      "eshapiro@gmail.com",
+      "3036185661",
+      "",
+      "Email, Text Message",
+      "Yes, please add me.",
+      "Yes",
+      "No",
+      "Yes",
+      "Not applicable",
+      "Member of local synagogue",
+      "CBS",
+      "Agree"
+    ]
   };
 
   const response = processFormSubmit(eObject);
@@ -101,7 +123,10 @@ function processFormSubmit(e) {
    
     // Send email confirmation to the user
     sendFormConfirmationNotification(eventData, preApproved);
-    
+
+    // Send notification to BCK admin of database updates
+    sendFormUpdateNotification(eventData, preApproved);
+
   } catch (err) {
     Logger.log("Error in processFormSubmit: " + err.toString());
     // Assumes existence of a library 'bckLib' for external logging
@@ -238,9 +263,9 @@ function isFormUpdated(dataObject) {
  */
 function sendFormConfirmationNotification(dataObject, preApproved = false) {
   // Fallback: If user used "Same as above" in contact email, use the system-captured email
-  let recipientEmail = dataObject.EMAIL_1;
+  let recipientEmail = dataObject.PRIMARY_EMAIL;
   if (!recipientEmail || recipientEmail.toLowerCase().includes("same as above")) {
-    recipientEmail = dataObject.EMAIL_ADDRESS; 
+    recipientEmail = dataObject.EMAIL_1; 
   }
 
   const firstName = dataObject.FIRST_NAME || "";
@@ -324,5 +349,96 @@ Boulder Chevra Kadisha
     Logger.log(`Member notification sent successfully to ${recipientEmail}.`);
   } catch (error) {
     Logger.log(`ERROR sending notification email to ${recipientEmail}: ${error.toString()}`);
+  }
+}
+
+
+/**
+ * Sends a notification email to the BCK admin that a new user has been added.
+ * * @param {Object} dataObject - The mapped data object.
+ * @param {boolean} [preApproved=false] - Whether the user was automatically approved.
+ */
+
+// For now hard codes the notification email address
+const notificationEmailAddress = "marlalshapiro@gmail.com"
+// const notificationEmailAddress = "boulder.chevra@gmail.com"
+
+
+function sendFormUpdateNotification(dataObject, preApproved = false) {
+  // Fallback: If user used "Same as above" in contact email, use the system-captured email
+  let recipientEmail = dataObject.EMAIL_1;
+  if (!recipientEmail || recipientEmail.toLowerCase().includes("same as above")) {
+    recipientEmail = dataObject.PRIMARY_EMAIL; 
+  }
+
+  const category = dataObject.CATEGORY || "";
+  const firstName = dataObject.FIRST_NAME || "";
+  const lastName = dataObject.LAST_NAME || "";
+  const phone = dataObject.PRIMARY_MOBILE_PHONE || "";
+  const email = dataObject.ADDRESS || "";
+
+  if (!category || !recipientEmail || !firstName || !lastName) {
+    Logger.log('Error: Missing required fields (Category, Email, Name, or Address) for notification');
+    return;
+  }
+
+  /**
+   * Generates the email subject and body for pre-approved members.
+   * @returns {Object} {subject, body}
+   */
+  function _preApprovedResponse() {
+    return {
+      subject : `${firstName} ${lastName} - Notice of new Boulder Chevra Kadisha ${category} PREAPPROVED`,
+      body: `
+
+This message is to notify you that a new ${category} has been PRE-APPROVED and has been added to the ${category} database automatically.
+
+Category - ${category}
+Lastname - ${lastName}
+Firstname - ${firstName}
+Email - ${recipientEmail}
+Phone - ${phone}
+
+Next Steps - No further action is required.
+
+      `
+    };
+  }
+
+
+  /**
+   * Generates the email subject and body for members requiring follow-up.
+   * @returns {Object} {subject, body}
+   */
+  function _followupResponse() {
+    return {
+      subject : `${firstName} ${lastName} - ** ACTION REQUIRED ** Notice of new Boulder Chevra Kadisha ${category} PENDING`,
+      body: `
+
+This message is to notify you that a new ${category} is PENDING approval and has yet to be added to the ${category} database.
+
+Category - ${category}
+Lastname - ${lastName}
+Firstname - ${firstName}
+Email - ${recipientEmail}
+Phone - ${phone}
+
+Next Steps - Contact the pending ${category} and then move their request from pending to approved.
+
+      `
+    };
+  }
+
+  const emailData = preApproved ? _preApprovedResponse() : _followupResponse();
+
+  try {
+    MailApp.sendEmail({
+      to: recipientEmail,
+      subject: emailData.subject,
+      body: emailData.body
+    });
+    Logger.log(`${category} admin notification sent successfully to ${recipientEmail}.`);
+  } catch (error) {
+    Logger.log(`ERROR sending ${category} admin notification email to ${recipientEmail}: ${error.toString()}`);
   }
 }
