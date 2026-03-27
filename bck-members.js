@@ -87,55 +87,68 @@ function debugSubmission() {
   const response = processFormSubmit(eObject);
   Logger.log(response);
 }
-
 /**
  * Main entry point for the 'On form submit' trigger.
  * Orchestrates dynamic data mapping, validation, database appending, and notifications.
- * * @param {GoogleAppsScript.Events.SheetsOnFormSubmit} e - The Google Form submit event object.
+ * @param {GoogleAppsScript.Events.SheetsOnFormSubmit} e - The Google Form submit event object.
  */
 function processFormSubmit(e) {
   Logger.log("Processing form submit");
-  
+
+  // Check library upfront to ensure logging and inputs are available
+  if (typeof bckLib === 'undefined') {
+    throw new Error("Required library 'bckLib' is not available.");
+  }
+
+  let sheetInputs;
   try {
+    // Initialize sheet inputs and ensure SPREADSHEET_ID matches the current context
+    sheetInputs = bckLib.getSheetInputs();
+    sheetInputs.SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+
     if (DEBUG) {
-      Logger.log("Capturing event data - >");
+      Logger.log("Capturing event data ->");
       Logger.log(JSON.stringify(e));
     }
 
     // Dynamic mapping converts raw form headers into standardized DB headers
+    // Note: Function name updated to match new "Guest" naming convention
     const mappedData = getMappedMemberData(e);
     const eventData = mappedData.dataObject; 
     const dbRowArray = mappedData.rowArray;
 
     if (DEBUG) console.log("Mapped Event Data:", eventData);
 
-    // Stop processing if this appears to be a profile update rather than a new member
+    // Stop processing if this appears to be a profile update rather than a new entry
     let formUpdated = isFormUpdated(eventData);
-    if (formUpdated) return;
+    if (formUpdated) return "Update Detected: No Append";
 
-    // Determine if member meets requirements for automatic approval
+    // Determine if guest meets requirements for automatic approval
     let preApproved = preApproveMembers(eventData);
     
-    // Sort into appropriate sheet based on approval status
-    const targetSheetName = preApproved ? "Members DB" : "Pending Member DB";
+    // Sort into appropriate sheet based on approval status (Guest vs Pending Guest)
+    const targetSheetName = preApproved ? "Member DB" : "Pending Member DB";
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     ss.getSheetByName(targetSheetName).appendRow(dbRowArray);
    
-    // Send email confirmation to the user
-    sendFormConfirmationNotification(eventData, preApproved);
+    // Send email confirmation to the user - passing sheetInputs as per new logic
+    sendFormConfirmationNotification(sheetInputs, eventData, preApproved);
 
     // Send notification to BCK admin of database updates
-    sendFormUpdateNotification(eventData, preApproved);
+    sendFormUpdateNotification(sheetInputs, eventData, preApproved);
+
+    const status = preApproved ? "Approved & Appended" : "Pending & Appended";
+    return status;
 
   } catch (err) {
     Logger.log("Error in processFormSubmit: " + err.toString());
-    // Assumes existence of a library 'bckLib' for external logging
-    if (typeof bckLib !== 'undefined') {
-      bckLib.logQCVars("Process FAILED", { errorMessage: err.toString() });
-    }
+    
+    // Since library is checked at the top, we can call it safely here
+    bckLib.logQCVars("Process FAILED", { errorMessage: err.toString() });
+    
+    return "Error: " + err.toString(); 
   }
 }
-
 /**
  * Transforms raw form responses into a structured object and array based on a mapping table.
  * * @param {GoogleAppsScript.Events.SheetsOnFormSubmit} e - The form submit event object.
@@ -261,8 +274,15 @@ function isFormUpdated(dataObject) {
  * * @param {Object} dataObject - The mapped data object.
  * @param {boolean} [preApproved=false] - Whether the user was automatically approved.
  */
-function sendFormConfirmationNotification(dataObject, preApproved = false) {
-  // Fallback: If user used "Same as above" in contact email, use the system-captured email
+
+/**
+ * Sends a confirmation email to the user using Sheet templates.
+ * @param {Object} sheetInputs - Config for bckLib.
+ * @param {Object} dataObject - The mapped data object.
+ * @param {boolean} [preApproved=false] - Approval status.
+ */
+function sendFormConfirmationNotification(sheetInputs, dataObject, preApproved = false) {
+  // 1. Email Fallback Logic
   let recipientEmail = dataObject.PRIMARY_EMAIL;
   if (!recipientEmail || recipientEmail.toLowerCase().includes("same as above")) {
     recipientEmail = dataObject.EMAIL_1; 
@@ -272,83 +292,48 @@ function sendFormConfirmationNotification(dataObject, preApproved = false) {
   const lastName = dataObject.LAST_NAME || "";
   const address = dataObject.ADDRESS || "";
 
+  // 2. Validation
   if (!recipientEmail || !firstName || !lastName || !address) {
-    Logger.log('Error: Missing required fields (Email, Name, or Address) for notification');
+    Logger.log('User notification skipped: Missing Email, Name, or Address.');
     return;
   }
 
-  /**
-   * Generates the email subject and body for pre-approved members.
-   * @returns {Object} {subject, body}
-   */
-  function _preApprovedResponse() {
-    return {
-      subject : `${firstName} ${lastName} - Boulder Chevra Kadisha - Welcome`,
-      body: `
-Dear ${firstName},
-
-Welcome to the Boulder Chevra Kadisha Family of dedicated volunteers.
-
-NEXT STEPS:
-
-- Set up a member account on the Boulder Chevra Kadisha website. This will give you access to training documents, policy guides and mortuary information. To gain access to the Boulder Chevra Kadisha Member only website, please go to www.BoulderChevraKadisha.org/XXXXX and use the password:XXXXXXXX to activate and set up your account. Once you have an account, you can log into it from the home page at www.BoulderChevraKadisha.org.
-
-- You have been automatically added to the Boulder Chevra Kadisha training and communication list. We typically send communications via email, but if you indicated that you like to receive texts, you will also receive a text. We send out information when there is an in-person or an online training, workshop, or other event (either sponsored by the Boulder Chevra Kadisha or a similar group). Since our work is mostly done alone, the in-person events are a great way to meet other volunteers.
-
-- If you indicated that you are interested in sitting shmira, you were automatically added to the Shomrim Volunteer List. When there is a death in the community and a request for our services, you will receive an email request to sit shmira. The email will include a link to a web portal where you may sign up for shmira times. Please remember that this link is unique to you so please do not share it with anyone. The web portal will email you a confirmation of any shifts you sign up for and calendar entries for the shifts. If you are new to sitting shmira and would like to have a partner for your first time, send us an email at: Boulder.Chevra@gmail.com. We will make sure to partner you up with someone.
-
-- If you indicated that you are interested in helping with Tahara, your contact information was sent to our Tahara Leads. A Tahara Lead will contact you to discuss Tahara, your experience, and your preferences with you. You do not need to have prior experience to help with tahara. If you are new to this, the Tahara Lead will make sure you are partnered with an appropriate team for on-the-job-training. Before your first tahara, you should review the tahara manuals on the member only section of our website. When there is a need for tahara, the Tahara Lead contacts volunteers by email and/or text. 
-
-If you have any questions, do not hesitate to contact us by email or phone.
-
-With gratitude,
-Boulder Chevra Kadisha
-Phone - 303-842-5365
-Email - boulder.chevra@gmail.com
-      `
-    };
+  // 3. Load Template from Sheet
+  const emailTemplates = bckLib.getEmails(sheetInputs);
+  const templateKey = preApproved ? 'guest_preapproved' : 'guest_followup';
+  const template = emailTemplates.find(t => t.key === templateKey);
+  
+  if (!template) {
+    Logger.log('Error: User template "%s" not found in sheet.', templateKey);
+    return;
   }
 
+  // 4. Dynamic Replacements
+  const replacements = {
+    '[firstName]': firstName,
+    '[lastName]': lastName
+  };
 
-  /**
-   * Generates the email subject and body for members requiring follow-up.
-   * @returns {Object} {subject, body}
-   */
-  function _followupResponse() {
-    return {
-      subject : `${firstName} ${lastName} - BCK Member Volunteer - Let's talk`,
-      body: `
-Dear ${firstName},
+  const replaceText = (text) => {
+    if (!text) return '';
+    return Object.entries(replacements).reduce((str, [k, v]) => 
+      str.replace(new RegExp(k.replace(/[[\]]/g, '\\$&'), 'g'), v), text);
+  };
 
-Thank you for submitting your Member Volunteer form with the Boulder Chevra Kadisha.
-
-We want to get to know you better. Please give us a call or write us an email. If you get our voice mail, just let us know some good days and times we can talk.
-
-Please contact us at:
-Boulder Chevra Kadisha
-Phone - 303-842-5365
-Email - boulder.chevra@gmail.com
-
-We appreciate your willingness to perform this sacred duty and look forward to speaking with you.
-
-With gratitude,
-
-Boulder Chevra Kadisha
-      `
-    };
+  // 5. Build Subject and Body (supporting up to 30 lines from sheet)
+  const subject = replaceText(template.subject);
+  const bodyLines = [];
+  for (let i = 1; i <= 30; i++) {
+    const lineText = replaceText(template[`line${i}`]);
+    if (lineText && lineText.trim()) bodyLines.push(lineText);
   }
-
-  const emailData = preApproved ? _preApprovedResponse() : _followupResponse();
+  const body = bodyLines.join('\n\n');
 
   try {
-    MailApp.sendEmail({
-      to: recipientEmail,
-      subject: emailData.subject,
-      body: emailData.body
-    });
-    Logger.log(`Member notification sent successfully to ${recipientEmail}.`);
+    MailApp.sendEmail(recipientEmail, subject, body);
+    Logger.log(`User notification sent to ${recipientEmail} (${templateKey})`);
   } catch (error) {
-    Logger.log(`ERROR sending notification email to ${recipientEmail}: ${error.toString()}`);
+    Logger.log(`User email ERROR: ${error}`);
   }
 }
 
@@ -359,86 +344,70 @@ Boulder Chevra Kadisha
  * @param {boolean} [preApproved=false] - Whether the user was automatically approved.
  */
 
-// For now hard codes the notification email address
-const notificationEmailAddress = "marlalshapiro@gmail.com"
-// const notificationEmailAddress = "boulder.chevra@gmail.com"
-
-
-function sendFormUpdateNotification(dataObject, preApproved = false) {
-  // Fallback: If user used "Same as above" in contact email, use the system-captured email
-  let recipientEmail = dataObject.EMAIL_1;
-  if (!recipientEmail || recipientEmail.toLowerCase().includes("same as above")) {
-    recipientEmail = dataObject.PRIMARY_EMAIL; 
+/**
+ * Sends notification to BCK Admin using Sheet templates.
+ * @param {Object} sheetInputs - Config for bckLib.
+ * @param {Object} dataObject - Form data.
+ * @param {boolean} preApproved - Status.
+ */
+function sendFormUpdateNotification(sheetInputs, dataObject, preApproved = false) {
+  const adminEmail = "marlalshapiro@gmail.com"; // Targeted Admin Address
+  
+  // Identify the user's email for the body of the admin report
+  let userEmail = dataObject.PRIMARY_EMAIL;
+  if (!userEmail || userEmail.toLowerCase().includes("same as above")) {
+    userEmail = dataObject.EMAIL_1; 
   }
 
-  const category = dataObject.CATEGORY || "";
+  const category = dataObject.CATEGORY || "Member";
   const firstName = dataObject.FIRST_NAME || "";
   const lastName = dataObject.LAST_NAME || "";
-  const phone = dataObject.PRIMARY_MOBILE_PHONE || "";
-  const email = dataObject.ADDRESS || "";
+  const phone = dataObject.PRIMARY_MOBILE_PHONE || "N/A";
 
-  if (!category || !recipientEmail || !firstName || !lastName) {
-    Logger.log('Error: Missing required fields (Category, Email, Name, or Address) for notification');
+  if (!firstName || !lastName) {
+    Logger.log('Admin notification skipped: Missing Name.');
     return;
   }
 
-  /**
-   * Generates the email subject and body for pre-approved members.
-   * @returns {Object} {subject, body}
-   */
-  function _preApprovedResponse() {
-    return {
-      subject : `${firstName} ${lastName} - Notice of new Boulder Chevra Kadisha ${category} PREAPPROVED`,
-      body: `
-
-This message is to notify you that a new ${category} has been PRE-APPROVED and has been added to the ${category} database automatically.
-
-Category - ${category}
-Lastname - ${lastName}
-Firstname - ${firstName}
-Email - ${recipientEmail}
-Phone - ${phone}
-
-Next Steps - No further action is required.
-
-      `
-    };
+  // 1. Load Template
+  const emailTemplates = bckLib.getEmails(sheetInputs);
+  const templateKey = preApproved ? 'admin_preapproved' : 'admin_followup';
+  const template = emailTemplates.find(t => t.key === templateKey);
+  
+  if (!template) {
+    Logger.log('Error: Admin template "%s" missing.', templateKey);
+    return;
   }
 
+  // 2. Define Replacements (Match tags in your Google Sheet)
+  const replacements = {
+    '[category]': category,
+    '[firstName]': firstName,
+    '[lastName]': lastName,
+    '[recipientEmail]': userEmail, // The user's email for the admin to see
+    '[phone]': phone
+  };
 
-  /**
-   * Generates the email subject and body for members requiring follow-up.
-   * @returns {Object} {subject, body}
-   */
-  function _followupResponse() {
-    return {
-      subject : `${firstName} ${lastName} - ** ACTION REQUIRED ** Notice of new Boulder Chevra Kadisha ${category} PENDING`,
-      body: `
+  const replaceText = (text) => {
+    if (!text) return '';
+    return Object.entries(replacements).reduce((str, [k, v]) => 
+      str.replace(new RegExp(k.replace(/[[\]]/g, '\\$&'), 'g'), v), text);
+  };
 
-This message is to notify you that a new ${category} is PENDING approval and has yet to be added to the ${category} database.
-
-Category - ${category}
-Lastname - ${lastName}
-Firstname - ${firstName}
-Email - ${recipientEmail}
-Phone - ${phone}
-
-Next Steps - Contact the pending ${category} and then move their request from pending to approved.
-
-      `
-    };
+  // 3. Construct Email
+  const subject = replaceText(template.subject);
+  const bodyLines = [];
+  for (let i = 1; i <= 30; i++) {
+    const lineText = replaceText(template[`line${i}`]);
+    if (lineText && lineText.trim()) bodyLines.push(lineText);
   }
-
-  const emailData = preApproved ? _preApprovedResponse() : _followupResponse();
+  const body = bodyLines.join('\n\n');
 
   try {
-    MailApp.sendEmail({
-      to: recipientEmail,
-      subject: emailData.subject,
-      body: emailData.body
-    });
-    Logger.log(`${category} admin notification sent successfully to ${recipientEmail}.`);
+    // FIX: Send to adminEmail, NOT the userEmail
+    MailApp.sendEmail(adminEmail, subject, body);
+    Logger.log(`Admin notification for ${lastName} sent to ${adminEmail}`);
   } catch (error) {
-    Logger.log(`ERROR sending ${category} admin notification email to ${recipientEmail}: ${error.toString()}`);
+    Logger.log(`Admin email ERROR: ${error}`);
   }
 }
