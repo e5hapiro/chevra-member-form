@@ -3,8 +3,8 @@
  * bck-members.js
  * Chevra Kadisha Members Form handler
  * -----------------------------------------------------------------
- * Version: 2.0.0 
- * Last updated: 2025-12-16
+ * Version: 2.0.1 
+ * Last updated: 2026-03-27
  * * CHANGELOG v1.0.0:
  * - Initial implementation of Selection Form.
  * 1.0.1:
@@ -13,6 +13,8 @@
  * - Revised, Simplified and now utilizes a mapping table in the spreadsheet
  * - Mapping table allows for dynamic changing of form fields to database mapping 
  * and includes a pending table for easy copying 
+ * 2.0.1:
+ * - All Dataobject fields are available for mail merge from template 
  * -----------------------------------------------------------------
  */
 
@@ -28,61 +30,61 @@ const TOKEN_COLUMN_NUMBER = 24;
  * Used for testing the `processFormSubmit` logic without needing a live form entry.
  */
 function debugSubmission() {
-  const eObject = {
-    "authMode": "FULL",
-    "namedValues": {
-      "Please indicate your comfort level or interest in the following sacred tasks: [Women’s Taharah (Ritual washing/dressing)]": ["Yes"],
-      "Timestamp": ["3/24/2026 20:22:43"],
-      "State": ["CO"],
-      "Primary Email Address:": ["eshapiro@gmail.com"],
-      "First Name": ["Plum"],
-      "Name of synagogue (Please include city and state if not local)\n": ["CBS"],
-      "Primary Mobile Phone Number: \nPlease enter your 10-digit mobile number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": ["3036185661"],
-      "Is there anything you want us to know about you, your skills or past chevra kadisha experience?": ["Not applicable"],
-      "City": ["Boulder"],
-      "Please indicate your comfort level or interest in the following sacred tasks: [Men’s Taharah (Ritual washing/dressing)]": ["No"],
-      "Secondary Phone Number: \nPlease enter your 10-digit number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": [""],
-      "Last Name": ["Shapiro123"],
-      "Address\nWe occasionally send physical mailings, such as educational materials or thank-you notes.": ["6391 Swallow Ln"],
-      "Zip": ["80303"],
-      "By submitting this application, I certify the information is true and accurate and I agree with the terms and conditions of volunteering with the Boulder Chevra Kadisha. ": ["Agree"],
-      "Please indicate your comfort level or interest in the following sacred tasks: [Shmira (Sitting with the deceased)]": ["Yes"],
-      "Google Groups Enrollment\nWe use a Google Group to share training materials, educational resources, and community event information. May we add your primary email to this group?\n": ["Yes, please add me."],
-      "How would you like to receive shmira and/or tahara scheduling alerts? (Select all that apply)": ["Email, Text Message"],
-      "What is your community affiliation?\nThe Boulder Chevra Kadisha is a community-wide, independent organization. We serve all Jews in Boulder County—regardless of synagogue membership.": ["Member of local synagogue"],
-      "Are you over 18 years old?": ["Yes"]
-    },
-    "range": {
-      "columnEnd": 20,
-      "columnStart": 1,
-      "rowEnd": 14,
-      "rowStart": 14
-    },
-    "source": {},
-    "triggerUid": "8462282913365360640",
-    "values": [
-      "3/24/2026 20:22:43",
-      "Yes",
-      "Plum",
-      "Shapiro123",
-      "6391 Swallow Ln",
-      "Boulder",
-      "CO",
-      "80303",
-      "eshapiro@gmail.com",
-      "3036185661",
-      "",
-      "Email, Text Message",
-      "Yes, please add me.",
-      "Yes",
-      "No",
-      "Yes",
-      "Not applicable",
-      "Member of local synagogue",
-      "CBS",
-      "Agree"
-    ]
-  };
+const eObject = {
+  authMode: "FULL",
+  namedValues: {
+    "State": ["co"],
+    "Google Groups Enrollment\nWe use a Google Group to share training materials, educational resources, and community event information. May we add your primary email to this group?\n": ["Yes, please add me."],
+    "Timestamp": ["3/27/2026 10:22:21"],
+    "How would you like to receive shmira and/or tahara scheduling alerts? (Select all that apply)": ["Email"],
+    "Primary Email Address:": ["marlalshapiro@gmail.com"],
+    "Please indicate your comfort level or interest in the following sacred tasks: [Men’s Taharah (Ritual washing/dressing)]": ["No"],
+    "By submitting this application, I certify the information is true and accurate and I agree with the terms and conditions of volunteering with the Boulder Chevra Kadisha. ": ["Agree"],
+    "What is your community affiliation?\nThe Boulder Chevra Kadisha is a community-wide, independent organization. We serve all Jews in Boulder County—regardless of synagogue membership.": ["Member of local synagogue"],
+    "Primary Mobile Phone Number: \nPlease enter your 10-digit mobile number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": ["7202533910"],
+    "First Name": ["Member 327 Yes"],
+    "Address\nWe occasionally send physical mailings, such as educational materials or thank-you notes.": ["2"],
+    "Name of synagogue (Please include city and state if not local)\n": ["bbb"],
+    "Are you over 18 years old?": ["Yes"],
+    "Secondary Phone Number: \nPlease enter your 10-digit number (e.g., 3035551212). - no spaces, dashes, or parentheses needed.": [""],
+    "Please indicate your comfort level or interest in the following sacred tasks: [Women’s Taharah (Ritual washing/dressing)]": ["Yes"],
+    "City": ["v"],
+    "Is there anything you want us to know about you, your skills or past chevra kadisha experience?": [""],
+    "Last Name": ["S"],
+    "Zip": ["80303"],
+    "Please indicate your comfort level or interest in the following sacred tasks: [Shmira (Sitting with the deceased)]": ["Yes"]
+  },
+  range: {
+    columnEnd: 20,
+    columnStart: 1,
+    rowEnd: 18,
+    rowStart: 18
+  },
+  source: {},
+  triggerUid: "8462282913365360640",
+  values: [
+    "3/27/2026 10:22:21",
+    "Yes",
+    "Member 327 Yes",
+    "S",
+    "2",
+    "v",
+    "co",
+    "80303",
+    "marlalshapiro@gmail.com",
+    "7202533910",
+    "",
+    "Email",
+    "Yes, please add me.",
+    "Yes",
+    "No",
+    "Yes",
+    "",
+    "Member of local synagogue",
+    "bbb",
+    "Agree"
+  ]
+};
 
   const response = processFormSubmit(eObject);
   Logger.log(response);
@@ -277,99 +279,100 @@ function isFormUpdated(dataObject) {
 
 /**
  * Sends a confirmation email to the user using Sheet templates.
- * @param {Object} sheetInputs - Config for bckLib.
- * @param {Object} dataObject - The mapped data object.
+ * Dynamically maps all dataObject keys to [TAGS] in the email template.
+ * * @param {Object} sheetInputs - Config for bckLib.
+ * @param {Object} dataObject - The mapped data object (keys should be UPPERCASE).
  * @param {boolean} [preApproved=false] - Approval status.
  */
 function sendFormConfirmationNotification(sheetInputs, dataObject, preApproved = false) {
-  // 1. Email Fallback Logic
-  let recipientEmail = dataObject.PRIMARY_EMAIL;
+  // 1. Email Fallback & Validation
+  // Checks PRIMARY_EMAIL first, falls back to EMAIL_1 if primary is missing
+  let recipientEmail = dataObject.PRIMARY_EMAIL || dataObject.EMAIL_1;
+  
   if (!recipientEmail || recipientEmail.toLowerCase().includes("same as above")) {
-    recipientEmail = dataObject.EMAIL_1; 
-  }
-
-  const firstName = dataObject.FIRST_NAME || "";
-  const lastName = dataObject.LAST_NAME || "";
-  const address = dataObject.ADDRESS || "";
-
-  // 2. Validation
-  if (!recipientEmail || !firstName || !lastName || !address) {
-    Logger.log('User notification skipped: Missing Email, Name, or Address.');
+    Logger.log('User notification skipped: Missing or invalid Email address.');
     return;
   }
 
-  // 3. Load Template from Sheet
+  // 2. Load Template from Sheet
   const emailTemplates = bckLib.getEmails(sheetInputs);
-  const templateKey = preApproved ? 'guest_preapproved' : 'guest_followup';
+  const templateKey = preApproved ? 'member_preapproved' : 'member_followup';
   const template = emailTemplates.find(t => t.key === templateKey);
   
   if (!template) {
-    Logger.log('Error: User template "%s" not found in sheet.', templateKey);
+    Logger.log('Error: User template "%s" not found in sheet settings.', templateKey);
     return;
   }
 
-  // 4. Dynamic Replacements
-  const replacements = {
-    '[firstName]': firstName,
-    '[lastName]': lastName
-  };
-
+  /**
+   * Helper: Replaces [BRACKET_TAGS] with dataObject values.
+   * Logic: Finds anything in brackets, converts the inside text to UPPERCASE,
+   * and looks for a matching key in the dataObject.
+   */
   const replaceText = (text) => {
     if (!text) return '';
-    return Object.entries(replacements).reduce((str, [k, v]) => 
-      str.replace(new RegExp(k.replace(/[[\]]/g, '\\$&'), 'g'), v), text);
+    
+    // Regex matches anything inside square brackets: [some_field]
+    return text.replace(/\[([^\]]+)\]/g, (match, p1) => {
+      const key = p1.toUpperCase();
+      
+      // If the key exists in our data (e.g., SHMIRA), return the value.
+      // Otherwise, return the original [tag] so the user knows it's broken.
+      return dataObject.hasOwnProperty(key) ? dataObject[key] : match;
+    });
   };
 
-  // 5. Build Subject and Body (supporting up to 30 lines from sheet)
+  // 3. Build Subject and Body
+  // Supports 'subject' field and up to 30 lines (line1, line2, etc.) from the sheet
   const subject = replaceText(template.subject);
   const bodyLines = [];
+  
   for (let i = 1; i <= 30; i++) {
     const lineText = replaceText(template[`line${i}`]);
-    if (lineText && lineText.trim()) bodyLines.push(lineText);
+    // Only add lines that actually contain text
+    if (lineText && lineText.trim()) {
+      bodyLines.push(lineText);
+    }
   }
+  
   const body = bodyLines.join('\n\n');
 
+  // 4. Send the Email
   try {
-    MailApp.sendEmail(recipientEmail, subject, body);
-    Logger.log(`User notification sent to ${recipientEmail} (${templateKey})`);
+    MailApp.sendEmail({
+      to: recipientEmail,
+      subject: subject,
+      body: body
+    });
+    Logger.log(`User notification sent to ${recipientEmail} (Template: ${templateKey})`);
   } catch (error) {
-    Logger.log(`User email ERROR: ${error}`);
+    Logger.log(`User email ERROR: ${error.toString()}`);
   }
 }
 
-
 /**
- * Sends a notification email to the BCK admin that a new user has been added.
- * * @param {Object} dataObject - The mapped data object.
- * @param {boolean} [preApproved=false] - Whether the user was automatically approved.
- */
-
-/**
- * Sends notification to BCK Admin using Sheet templates.
+ * Sends a notification email to the Admin using Sheet templates.
+ * Dynamically maps all dataObject keys to [TAGS] and supports [RECIPIENTEMAIL].
  * @param {Object} sheetInputs - Config for bckLib.
- * @param {Object} dataObject - Form data.
- * @param {boolean} preApproved - Status.
+ * @param {Object} dataObject - The mapped data object from the form.
+ * @param {boolean} [preApproved=false] - Approval status.
  */
 function sendFormUpdateNotification(sheetInputs, dataObject, preApproved = false) {
   const adminEmail = "marlalshapiro@gmail.com"; // Targeted Admin Address
   
-  // Identify the user's email for the body of the admin report
-  let userEmail = dataObject.PRIMARY_EMAIL;
-  if (!userEmail || userEmail.toLowerCase().includes("same as above")) {
-    userEmail = dataObject.EMAIL_1; 
+  // 1. Identify the user's email (for use in the [RECIPIENTEMAIL] tag)
+  let userEmail = dataObject.PRIMARY_EMAIL || dataObject.EMAIL_1 || "N/A";
+  if (userEmail.toLowerCase().includes("same as above")) {
+    userEmail = "N/A"; 
   }
 
-  const category = dataObject.CATEGORY || "Member";
-  const firstName = dataObject.FIRST_NAME || "";
-  const lastName = dataObject.LAST_NAME || "";
-  const phone = dataObject.PRIMARY_MOBILE_PHONE || "N/A";
-
-  if (!firstName || !lastName) {
+  // Validation: Ensure we at least have a name before bothering the admin
+  if (!dataObject.FIRST_NAME || !dataObject.LAST_NAME) {
     Logger.log('Admin notification skipped: Missing Name.');
     return;
   }
 
-  // 1. Load Template
+  // 2. Load Template
   const emailTemplates = bckLib.getEmails(sheetInputs);
   const templateKey = preApproved ? 'admin_preapproved' : 'admin_followup';
   const template = emailTemplates.find(t => t.key === templateKey);
@@ -379,35 +382,46 @@ function sendFormUpdateNotification(sheetInputs, dataObject, preApproved = false
     return;
   }
 
-  // 2. Define Replacements (Match tags in your Google Sheet)
-  const replacements = {
-    '[category]': category,
-    '[firstName]': firstName,
-    '[lastName]': lastName,
-    '[recipientEmail]': userEmail, // The user's email for the admin to see
-    '[phone]': phone
-  };
-
+  /**
+   * Helper: Replaces [BRACKET_TAGS] with dataObject values.
+   * Handles dynamic keys from dataObject + custom [RECIPIENTEMAIL] tag.
+   */
   const replaceText = (text) => {
     if (!text) return '';
-    return Object.entries(replacements).reduce((str, [k, v]) => 
-      str.replace(new RegExp(k.replace(/[[\]]/g, '\\$&'), 'g'), v), text);
+    
+    return text.replace(/\[([^\]]+)\]/g, (match, p1) => {
+      const key = p1.toUpperCase();
+      
+      // Special case: recipientEmail isn't a direct key in the dataObject usually
+      if (key === "RECIPIENTEMAIL") return userEmail;
+      
+      // Otherwise, look for the key in dataObject (e.g., [CATEGORY], [PHONE])
+      // If the key exists, return value; otherwise return the original [tag]
+      return dataObject.hasOwnProperty(key) ? dataObject[key] : match;
+    });
   };
 
-  // 3. Construct Email
+  // 3. Construct Subject and Body
   const subject = replaceText(template.subject);
   const bodyLines = [];
+  
   for (let i = 1; i <= 30; i++) {
     const lineText = replaceText(template[`line${i}`]);
-    if (lineText && lineText.trim()) bodyLines.push(lineText);
+    if (lineText && lineText.trim()) {
+      bodyLines.push(lineText);
+    }
   }
   const body = bodyLines.join('\n\n');
 
+  // 4. Send to Admin
   try {
-    // FIX: Send to adminEmail, NOT the userEmail
-    MailApp.sendEmail(adminEmail, subject, body);
-    Logger.log(`Admin notification for ${lastName} sent to ${adminEmail}`);
+    MailApp.sendEmail({
+      to: adminEmail,
+      subject: subject,
+      body: body
+    });
+    Logger.log(`Admin notification for ${dataObject.LAST_NAME} sent to ${adminEmail}`);
   } catch (error) {
-    Logger.log(`Admin email ERROR: ${error}`);
+    Logger.log(`Admin email ERROR: ${error.toString()}`);
   }
 }
